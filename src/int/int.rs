@@ -100,15 +100,119 @@ impl BigInt {
             }
         }
     }
-    #[inline(always)]
-    #[allow(dead_code)]
-    fn sub_abs(&self, _other: &Self) -> Vec<u64> {
-        todo!("d")
+    fn sub_sing_ass(&mut self, other: &Self) {
+        if self.neg && other.neg {
+            if *self < other {
+                self.sub_abs_ass(other);
+                self.neg = false
+            } else {
+                self.sub_abs_ass(other);
+                self.neg = true
+            }
+        } else if !self.neg && other.neg {
+            self.add_abs_ass(other);
+            self.neg = false
+        } else if self.neg && !other.neg {
+            self.add_abs_ass(other);
+            self.neg = false
+        } else {
+            if *self < other {
+                self.sub_abs_ass(other);
+                self.neg = true
+            } else {
+                self.sub_abs_ass(other);
+                self.neg = false
+            }
+        };
+    }
+    fn sub_sing(&self, other: &Self) -> BigInt {
+        if self.neg && other.neg {
+            if self < other {
+                return BigInt {
+                    neg: false,
+                    body: self.sub_abs(other),
+                };
+            } else {
+                return BigInt {
+                    neg: true,
+                    body: self.sub_abs(other),
+                };
+            }
+        } else if !self.neg && other.neg {
+            return BigInt {
+                neg: false,
+                body: self.add_abs(other),
+            };
+        } else if self.neg && !other.neg {
+            return BigInt {
+                neg: false,
+                body: self.add_abs(other),
+            };
+        } else {
+            if self < other {
+                return BigInt {
+                    neg: true,
+                    body: self.sub_abs(other),
+                };
+            } else {
+                return BigInt {
+                    neg: false,
+                    body: self.sub_abs(other),
+                };
+            }
+        };
     }
     #[inline(always)]
-    #[allow(dead_code)]
-    fn sub_abs_ass(&mut self, _other: &Self) -> Vec<u64> {
-        todo!("d")
+    fn sub_abs(&self, other: &Self) -> Vec<u64> {
+        let (v1, v2) = if cmp_abs(self, other) == -1 {
+            (self, other)
+        } else if cmp_abs(self, other) == 0 {
+            return vec![0];
+        } else {
+            (other, self)
+        };
+        let mut result = v1.body.clone();
+        let mut borrow: bool = false;
+        for (a, b) in zip(result.iter_mut(), v2.body.iter()) {
+            (*a, borrow) = a.overflowing_sub(if borrow { *b + 1 } else { *b })
+        }
+        if borrow {
+            for a in result[v2.body.len()..].iter_mut() {
+                (*a, borrow) = a.overflowing_sub(1);
+                if !borrow {
+                    break;
+                }
+            }
+        }
+        trim(&mut result)
+    }
+    #[inline(always)]
+    fn sub_abs_ass(&mut self, other: &Self) {
+        if *self < other {
+            let mut borrow: bool = false;
+            self.body.resize(other.body.len(), 0);
+            for (a, b) in zip(self.body.iter_mut(), other.body.iter()) {
+                (*a, borrow) = b.borrowing_sub(*a, borrow);
+                if a == &0 && !borrow {
+                    break;
+                }
+            }
+            self.body = trim(&mut self.body);
+            return;
+        };
+        let mut borrow: bool = false;
+        for (a, b) in zip(self.body.iter_mut(), other.body.iter()) {
+            (*a, borrow) = a.overflowing_sub(if borrow { *b + 1 } else { *b })
+        }
+        if borrow {
+            for a in self.body[other.body.len()..].iter_mut() {
+                (*a, borrow) = a.overflowing_sub(1);
+                if !borrow {
+                    break;
+                }
+            }
+        }
+        self.body = trim(&mut self.body);
     }
     #[inline(always)]
     fn add_abs_ass(&mut self, other: &Self) {

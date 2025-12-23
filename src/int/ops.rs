@@ -1,5 +1,6 @@
 use core::cmp::{Ord, PartialEq, PartialOrd};
 use std::cmp::Ordering;
+use std::ops::SubAssign;
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, Mul, Rem, Sub},
@@ -60,28 +61,38 @@ impl BigInt {
         return result;
     }
 }
+impl SubAssign<&BigInt> for BigInt {
+    fn sub_assign(&mut self, rhs: &Self) {
+        self.sub_sing_ass(&rhs)
+    }
+}
+impl SubAssign<BigInt> for BigInt {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.sub_sing_ass(&rhs)
+    }
+}
 impl Sub<BigInt> for &BigInt {
     type Output = BigInt;
-    fn sub(self, _rhs: BigInt) -> Self::Output {
-        todo!("y")
+    fn sub(self, rhs: BigInt) -> Self::Output {
+        return self.sub_sing(&rhs);
     }
 }
 impl Sub<&BigInt> for &BigInt {
     type Output = BigInt;
-    fn sub(self, _rhs: &BigInt) -> Self::Output {
-        todo!("y")
+    fn sub(self, rhs: &BigInt) -> Self::Output {
+        return self.sub_sing(&rhs);
     }
 }
 impl Sub<&BigInt> for BigInt {
     type Output = BigInt;
-    fn sub(self, _rhs: &BigInt) -> Self::Output {
-        todo!("y")
+    fn sub(self, rhs: &BigInt) -> Self::Output {
+        return self.sub_sing(&rhs);
     }
 }
 impl Sub<BigInt> for BigInt {
     type Output = BigInt;
-    fn sub(self, _rhs: Self) -> Self::Output {
-        todo!("y")
+    fn sub(self, rhs: Self) -> Self::Output {
+        return self.sub_sing(&rhs);
     }
 }
 impl Mul<BigInt> for &BigInt {
