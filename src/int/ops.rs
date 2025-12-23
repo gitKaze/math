@@ -1,9 +1,9 @@
-use core::cmp::{PartialEq, PartialOrd};
+use core::cmp::{Ord, PartialEq, PartialOrd};
+use std::cmp::Ordering;
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, Mul, Rem, Sub},
 };
-
 impl BigInt {
     fn parse<T: AsRef<str>>(input: T) -> Self {
         let mut result = Self::default();
@@ -134,60 +134,36 @@ impl Mul<BigInt> for BigInt {
 }
 impl AddAssign<&BigInt> for BigInt {
     fn add_assign(&mut self, rhs: &BigInt) {
-        let sing = false;
-        self.add_abs_ass(&rhs);
-        self.neg = sing;
+        self.add_sing_ass(&rhs)
     }
 }
 impl AddAssign<BigInt> for BigInt {
     fn add_assign(&mut self, rhs: BigInt) {
-        let sing = false;
-        self.add_abs_ass(&rhs);
-        self.neg = sing
+        self.add_sing_ass(&rhs)
     }
 }
 impl Add<&BigInt> for &BigInt {
     type Output = BigInt;
     fn add(self, rhs: &BigInt) -> Self::Output {
-        let sing = false;
-        let result = BigInt {
-            neg: sing,
-            body: self.add_abs(rhs),
-        };
-        return result;
+        self.add_sing(rhs)
     }
 }
 impl Add<BigInt> for &BigInt {
     type Output = BigInt;
     fn add(self, rhs: BigInt) -> Self::Output {
-        let sing = false;
-        let result = BigInt {
-            neg: sing,
-            body: self.add_abs(&rhs),
-        };
-        return result;
+        self.add_sing(&rhs)
     }
 }
 impl Add<&BigInt> for BigInt {
     type Output = BigInt;
     fn add(self, rhs: &Self) -> Self::Output {
-        let sing = false;
-        let result = BigInt {
-            neg: sing,
-            body: self.add_abs(&rhs),
-        };
-        return result;
+        self.add_sing(rhs)
     }
 }
 impl Add<BigInt> for BigInt {
     type Output = BigInt;
     fn add(self, rhs: Self) -> Self::Output {
-        let sing = false;
-        let result = BigInt {
-            neg: sing,
-            body: self.add_abs(&rhs),
-        };
-        return result;
+        self.add_sing(&rhs)
     }
 }
 impl Div<&BigInt> for &BigInt {
@@ -238,29 +214,102 @@ impl Rem<BigInt> for BigInt {
         todo!("y")
     }
 }
-impl PartialOrd for BigInt {
-    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        todo!("t")
+impl Ord for BigInt {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        return self.partial_cmp(other).unwrap();
     }
-    fn ge(&self, _other: &Self) -> bool {
-        todo!("u")
+}
+impl Eq for BigInt {}
+impl PartialEq<&BigInt> for BigInt {
+    fn eq(&self, other: &&Self) -> bool {
+        return self.eq(*other);
     }
-    fn gt(&self, _other: &Self) -> bool {
-        todo!("t")
+    fn ne(&self, other: &&Self) -> bool {
+        return self.ne(*other);
     }
-    fn le(&self, _other: &Self) -> bool {
-        todo!("t")
+}
+impl PartialOrd<&BigInt> for BigInt {
+    fn partial_cmp(&self, other: &&Self) -> Option<std::cmp::Ordering> {
+        return self.partial_cmp(*other);
     }
-    fn lt(&self, _other: &Self) -> bool {
-        todo!("t")
+}
+impl PartialOrd<BigInt> for BigInt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let (mut v1, mut v2) = (self, other);
+        if !v1.neg && v2.neg {
+            return Some(Ordering::Greater);
+        } else if v1.neg && !v2.neg {
+            return Some(Ordering::Less);
+        } else if v1.neg && v2.neg {
+            (v1, v2) = (v2, v1);
+        }
+        let (l1, l2) = (v1.body.len(), v2.body.len());
+        if l1 == l2 {
+            for (a, b) in zip(v1.body.iter(), v2.body.iter()) {
+                if a != b {
+                    if a > b {
+                        return Some(Ordering::Greater);
+                    } else {
+                        return Some(Ordering::Less);
+                    }
+                }
+            }
+            return Some(Ordering::Equal);
+        } else if l1 < l2 {
+            return Some(Ordering::Less);
+        } else {
+            return Some(Ordering::Greater);
+        };
+    }
+    fn ge(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => true,
+            Some(Ordering::Equal) => true,
+            Some(Ordering::Less) => false,
+            _ => false,
+        }
+    }
+    fn gt(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => true,
+            Some(Ordering::Equal) => false,
+            Some(Ordering::Less) => false,
+            _ => false,
+        }
+    }
+    fn le(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => false,
+            Some(Ordering::Equal) => true,
+            Some(Ordering::Less) => true,
+            _ => false,
+        }
+    }
+    fn lt(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => false,
+            Some(Ordering::Equal) => false,
+            Some(Ordering::Less) => true,
+            _ => false,
+        }
     }
 }
 impl PartialEq for BigInt {
-    fn eq(&self, _other: &Self) -> bool {
-        todo!("t")
+    fn eq(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => false,
+            Some(Ordering::Equal) => true,
+            Some(Ordering::Less) => false,
+            _ => false,
+        }
     }
-    fn ne(&self, _other: &Self) -> bool {
-        todo!("t")
+    fn ne(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Ordering::Greater) => true,
+            Some(Ordering::Equal) => false,
+            Some(Ordering::Less) => true,
+            _ => false,
+        }
     }
 }
 impl fmt::Display for BigInt {
@@ -272,7 +321,7 @@ impl Default for BigInt {
     fn default() -> Self {
         BigInt {
             neg: false,
-            body: vec![0 as u64],
+            body: vec![0u64],
         }
     }
 }

@@ -32,9 +32,82 @@ pub struct BigInt {
     pub body: Vec<u64>,
 }
 impl BigInt {
+    fn add_sing(&self, other: &Self) -> BigInt {
+        match (self.neg, other.neg) {
+            (true, true) => BigInt {
+                neg: true,
+                body: self.add_abs(other),
+            },
+            (false, false) => BigInt {
+                neg: false,
+                body: self.add_abs(other),
+            },
+            (true, false) => {
+                if cmp_abs(self, other) == 1 {
+                    BigInt {
+                        neg: true,
+                        body: self.sub_abs(other),
+                    }
+                } else {
+                    BigInt {
+                        neg: false,
+                        body: other.sub_abs(self),
+                    }
+                }
+            }
+            (false, true) => {
+                if cmp_abs(self, other) == 1 {
+                    BigInt {
+                        neg: false,
+                        body: self.sub_abs(other),
+                    }
+                } else {
+                    BigInt {
+                        neg: true,
+                        body: other.sub_abs(self),
+                    }
+                }
+            }
+        }
+    }
+    fn add_sing_ass(&mut self, other: &Self) {
+        match (self.neg, other.neg) {
+            (true, true) => {
+                self.add_abs_ass(other);
+                self.neg = true;
+            }
+            (false, false) => {
+                self.add_abs_ass(other);
+                self.neg = false;
+            }
+            (true, false) => {
+                if cmp_abs(&self, other) == 1 {
+                    self.sub_abs_ass(other);
+                    self.neg = true;
+                } else {
+                    self.sub_abs_ass(other);
+                    self.neg = false;
+                }
+            }
+            (false, true) => {
+                if cmp_abs(&self, other) == 1 {
+                    self.sub_abs_ass(other);
+                    self.neg = false;
+                } else {
+                    self.sub_abs_ass(other);
+                    self.neg = true;
+                }
+            }
+        }
+    }
     #[inline(always)]
     #[allow(dead_code)]
     fn sub_abs(&self, _other: &Self) -> Vec<u64> {
+        todo!("d")
+    }
+    #[inline(always)]
+    #[allow(dead_code)]
+    fn sub_abs_ass(&mut self, _other: &Self) -> Vec<u64> {
         todo!("d")
     }
     #[inline(always)]
@@ -60,6 +133,7 @@ impl BigInt {
             self.body.push(1);
         }
     }
+    #[inline(always)]
     fn add_abs(&self, other: &Self) -> Vec<u64> {
         let (l1, l2) = (self.body.len(), other.body.len());
         let (v1, v2, l1, mut l2) = if l1 > l2 {
@@ -106,6 +180,13 @@ impl BigInt {
         return result;
     }
 }
+fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
+    match v1.body.cmp(&v2.body) {
+        Ordering::Greater => 1,
+        Ordering::Equal => 0,
+        Ordering::Less => -1,
+    }
+}
 #[inline(always)]
 fn trim(val: &mut Vec<u64>) -> Vec<u64> {
     let mut s = val.len() - 1;
@@ -130,6 +211,9 @@ fn str_bigint<T: AsRef<str>>(str: T) -> BigInt {
     return result;
 }
 pub fn pow10(power: &u64) -> BigInt {
+    if power < &0 {
+        return BigInt::default();
+    }
     let mut res = BigInt::from(1);
     let mut b: BigInt = BigInt::from(10);
     let mut n = power.clone();
@@ -149,17 +233,26 @@ pub fn pow10(power: &u64) -> BigInt {
     return res;
 }
 pub fn pow(base: &BigInt, power: &u64) -> BigInt {
-    //if base == BigInt::from(0) {
-    //    return BigInt::default();
-    //} else if base == BigInt::from(1) || power == 0 {
-    //    return BigInt::from(1);
-    //} else if power == 1 {
-    //    return BigInt {
-    //        neg: (false),
-    //        body: (base.body.clone()),
-    //    };
+    if power < &0 {
+        return BigInt::default();
+    }
+    if BigInt::from(0) == base {
+        return BigInt::default();
+    } else if BigInt::from(1) == base || power == &0 {
+        return BigInt::from(1);
+    } else if power == &1 {
+        return BigInt {
+            neg: (false),
+            body: (base.body.clone()),
+        };
+    }
+    let mut res = BigInt {
+        neg: (base.neg),
+        body: (vec![1]),
+    };
+    //if power % 2 == 0 {
+    //    res.neg = false
     //}
-    let mut res = BigInt::from(1);
     let mut b: BigInt = BigInt::default();
     b.body.clone_from(&base.body);
     let mut n = power.clone();
