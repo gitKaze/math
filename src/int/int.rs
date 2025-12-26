@@ -1,7 +1,9 @@
+//shift assignment shift left right then make div X by 1 && div X<4 by 2 also make sings for mul and div so you can test this
 #[allow(unused)]
 use rayon::iter::*;
 #[allow(unused)]
 use rayon::prelude::*;
+use std::borrow::Cow;
 use std::iter::zip;
 
 include!("ops.rs");
@@ -26,7 +28,7 @@ const POWS10: &[u64] = &[
     100000000000000000,
     1000000000000000000,
 ];
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BigInt {
     pub neg: bool,
     pub body: Vec<u64>,
@@ -374,4 +376,67 @@ pub fn pow(base: &BigInt, power: &u64) -> BigInt {
     }
 
     return res;
+}
+fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
+    let dividend = ((*hi as u128) << 64) | (*low as u128);
+    return (
+        (dividend / *divs as u128), //quotient
+        (dividend % *divs as u128), //remainder
+    );
+}
+fn normalize<'a>(v1: &'a BigInt, v2: &'a BigInt) -> (Cow<'a, BigInt>, Cow<'a, BigInt>) {
+    let off = v2.body.last().unwrap().leading_zeros();
+    (Cow::Owned(v1 << off), Cow::Owned(v2 << off))
+}
+
+fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    let ld = v2.body.last().unwrap().leading_zeros();
+    let (d, d2) = normalize(v1, v2);
+    let mut dividend = d.into_owned();
+    dividend.body.push(0);
+    let divisor = d2.into_owned();
+    let (n, m) = (divisor.body.len(), dividend.body.len());
+    let mut result: Vec<u64> = vec![0; m - n + 1];
+    for i in (0..=(m - n)).rev() {
+        let (h1, h2, d1) = (
+            dividend.body[i + n],
+            dividend.body[i + n - 1],
+            divisor.body[n - 1],
+        );
+        let (d2, h3) = (dividend.body[i + n - 2], divisor.body[n - 2]);
+        let (mut quo, mut rem) = div_ww_w(&h1, &h2, &d1);
+        while quo == u64::MAX as u128 + 1
+            || quo * (h3 as u128) > (u64::MAX as u128 + 1) * rem + d2 as u128
+        {
+            quo -= 1;
+            rem += d1 as u128;
+            if rem >= (u64::MAX as u128 + 1) {
+                break;
+            }
+        }
+        let mut b = false;
+        let mut borrow: u128 = 0;
+        for z in 0..n {
+            let mut p = quo * divisor.body[z] as u128 + borrow;
+            let (res, b) = (dividend.body[i + z]).overflowing_sub(p as u64);
+            borrow = (p >> 64) + if b { 1 } else { 0 };
+            dividend.body[i + z] = res as u64
+        }
+        (dividend.body[i + n], b) = dividend.body[i + n].overflowing_sub(borrow as u64);
+        if b {
+            quo -= 1;
+            let mut carry: bool = false;
+            for z in 0..n {
+                (dividend.body[i + z], carry) =
+                    dividend.body[i + z].carrying_add(divisor.body[z], carry)
+            }
+            if carry {
+                (dividend.body[i + n], carry) = dividend.body[i + n].carrying_add(0, carry)
+            }
+        }
+        result[i] = quo as u64
+    }
+    dividend >>= ld;
+    trim(&mut dividend.body);
+    (result, dividend.body)
 }
