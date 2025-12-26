@@ -414,10 +414,10 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
                 break;
             }
         }
-        let mut b = false;
+        let b: bool;
         let mut borrow: u128 = 0;
         for z in 0..n {
-            let mut p = quo * divisor.body[z] as u128 + borrow;
+            let p = quo * divisor.body[z] as u128 + borrow;
             let (res, b) = (dividend.body[i + z]).overflowing_sub(p as u64);
             borrow = (p >> 64) + if b { 1 } else { 0 };
             dividend.body[i + z] = res as u64
@@ -431,7 +431,7 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
                     dividend.body[i + z].carrying_add(divisor.body[z], carry)
             }
             if carry {
-                (dividend.body[i + n], carry) = dividend.body[i + n].carrying_add(0, carry)
+                (dividend.body[i + n], _) = dividend.body[i + n].carrying_add(0, carry)
             }
         }
         result[i] = quo as u64

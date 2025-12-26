@@ -1,9 +1,10 @@
 use core::cmp::{Ord, PartialEq, PartialOrd};
 use std::cmp::Ordering;
 use std::ops::SubAssign;
+#[allow(unused)]
 use std::{
     fmt,
-    ops::{Add, AddAssign, Div, Mul, Rem, Sub},
+    ops::{Add, AddAssign, Div, Mul, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub},
 };
 impl BigInt {
     fn parse<T: AsRef<str>>(input: T) -> Self {
@@ -447,3 +448,73 @@ impl From<u128> for BigInt {
         }
     }
 }
+impl ShlAssign<u32> for BigInt {
+    fn shl_assign(&mut self, other: u32) {
+        if other > 63 {
+            let app: Vec<u64> = vec![0; (other / 64) as usize];
+            self.body.splice(0..0, app);
+        }
+        let shift = other % 64;
+        let mut carry = 0u64;
+        for a in self.body.iter_mut() {
+            let temp = (*a as u128) << shift;
+            *a = (temp as u64) | carry;
+            carry = (temp >> 64) as u64;
+        }
+        if carry != 0 {
+            self.body.push(carry)
+        }
+    }
+}
+impl Shl<&u32> for BigInt {
+    type Output = Self;
+    fn shl(self, other: &u32) -> Self::Output {
+        let mut result = BigInt {
+            neg: self.neg,
+            body: self.body.clone(),
+        };
+        if other > &63 {
+            let app: Vec<u64> = vec![0; (other / 64) as usize];
+            result.body.splice(0..0, app);
+        }
+        let shift = other % 64;
+        let mut carry = 0u64;
+        for a in result.body.iter_mut() {
+            let temp = (*a as u128) << shift;
+            *a = (temp as u64) | carry;
+            carry = (temp >> 64) as u64;
+        }
+        if carry != 0 {
+            result.body.push(carry)
+        }
+        result
+    }
+}
+impl Shl<u32> for &BigInt {
+    type Output = BigInt;
+    fn shl(self, other: u32) -> Self::Output {
+        let mut result = BigInt {
+            neg: self.neg,
+            body: self.body.clone(),
+        };
+        if other > 63 {
+            let app: Vec<u64> = vec![0; (other / 64) as usize];
+            result.body.splice(0..0, app);
+        }
+        let shift = other % 64;
+        let mut carry = 0u64;
+        for a in result.body.iter_mut() {
+            let temp = (*a as u128) << shift;
+            *a = (temp as u64) | carry;
+            carry = (temp >> 64) as u64;
+        }
+        if carry != 0 {
+            result.body.push(carry)
+        }
+        result
+    }
+}
+impl Shr<u32> for BigInt {}
+impl Shr<u32> for BigInt {}
+impl ShrAssign<u32> for BigInt {}
+impl ShrAssign<&u32> for BigInt {}
