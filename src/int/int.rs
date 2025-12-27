@@ -1,4 +1,3 @@
-//signs for mul and div short division X by 1 and 1 by 1
 #[allow(unused)]
 use rayon::iter::*;
 #[allow(unused)]
@@ -261,6 +260,15 @@ impl BigInt {
         }
         return result;
     }
+    fn mul_man(&self, v2: &Self) -> Vec<u64> {
+        let (l1, l2) = (self.body.len(), v2.body.len());
+        match (l1, l2) {
+            (a, b) if a < 50 || b < 50 => self.mul1(v2),
+            (a, b) if a < 1500 || b < 1500 => self.mul1(v2),
+            (a, b) if a < 3000 && b < 3000 => self.mul1(v2),
+            _ => self.mul1(v2),
+        }
+    }
     #[inline(always)]
     fn mul1(&self, other: &Self) -> Vec<u64> {
         let (s1, s2) = (self.body.len(), other.body.len());
@@ -355,9 +363,9 @@ pub fn pow(base: &BigInt, power: &u64) -> BigInt {
         neg: (base.neg),
         body: (vec![1]),
     };
-    //if power % 2 == 0 {
-    //    res.neg = false
-    //}
+    if power % 2 == 0 {
+        res.neg = false
+    }
     let mut b: BigInt = BigInt::default();
     b.body.clone_from(&base.body);
     let mut n = power.clone();
@@ -433,13 +441,137 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     dividend >>= ld;
     dividend.body = trim(&mut dividend.body);
     result = trim(&mut result);
-    (result, dividend.body)
+    (result, dividend.body) //quo,rem
 }
-#[allow(unused)]
-fn sh_div_abs(_v1: &BigInt, _v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
-    todo!("short division of x by 1")
+fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    let (mut rem, len) = (0u128, v1.body.len());
+    let mut quo: u128;
+    let mut result: Vec<u64> = vec![0; len];
+    for (a, b) in zip(v1.body.iter().rev(), result.iter_mut().rev()) {
+        (quo, rem) = div_ww_w(&(rem as u64), a, &v2.body[0]);
+        *b = quo as u64
+    }
+    result = trim(&mut result);
+    return (result, vec![rem as u64]); //quo,rem
 }
-#[allow(unused)]
-fn div_1_1_abs(_v1: &BigInt, _v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
-    todo!("short division of 1 by 1")
+fn div_1_1_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    return (vec![v1.body[0] / v2.body[0]], vec![v1.body[0] % v2.body[0]]);
+}
+fn div_sing(sing1: bool, sing2: bool, method: bool) -> bool {
+    match (sing1, sing2, method) {
+        (true, true, true) => false,
+        (false, false, true) => false,
+        (false, true, true) => true,
+        (true, false, true) => true,
+        (true, _, false) => true,
+        (false, _, false) => false,
+    }
+}
+fn div_man(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    let (l1, l2) = (v1.body.len(), v2.body.len());
+    match (l1, l2) {
+        (1, 1) => div_1_1_abs(v1, v2),
+        (a, 1) if a > 1 => sh_div_abs(v1, v2),
+        (a, b) if a > 1 && b > 1 => div_abs(v1, v2),
+        _ => div_abs(v1, v2),
+    }
+}
+fn shr_ass(v1: &mut BigInt, other: &u32) {
+    let shift = other % 64;
+    let drain = other / 64;
+    if drain != 0 {
+        v1.body.drain(0..min(drain as usize, v1.body.len()));
+        if v1.body.len() == 0 {
+            v1.body = vec![0];
+            return;
+        }
+    }
+    if shift == 0 {
+        return;
+    }
+    let mut carry = 0u64;
+    for a in v1.body.iter_mut().rev() {
+        let temp = *a;
+        *a = (*a >> shift) | carry;
+        carry = temp << (64 - shift);
+    }
+    v1.body = trim(&mut v1.body);
+}
+fn shr(v1: &BigInt, other: &u32) -> BigInt {
+    let mut result = BigInt {
+        neg: v1.neg,
+        body: v1.body.clone(),
+    };
+    let shift = other % 64;
+    let drain = other / 64;
+    if drain != 0 {
+        result.body.drain(0..min(drain as usize, result.body.len()));
+        if result.body.len() == 0 {
+            result.body = vec![0];
+            return result;
+        }
+    }
+    if shift == 0 {
+        return result;
+    }
+    let mut carry = 0u64;
+    for a in result.body.iter_mut().rev() {
+        let temp = *a;
+        *a = (*a >> shift) | carry;
+        carry = temp << (64 - shift);
+    }
+    result.body = trim(&mut result.body);
+    result
+}
+fn shl_ass(v1: &mut BigInt, other: &u32) {
+    if *other == 0 {
+        return;
+    }
+    let zeros = other / 64;
+    let shift = other % 64;
+    if zeros != 0 {
+        let app: Vec<u64> = vec![0; zeros as usize];
+        v1.body.splice(0..0, app);
+    }
+    if shift == 0 {
+        return;
+    }
+    let mut carry = 0u64;
+    for a in v1.body.iter_mut() {
+        let temp = (*a as u128) << shift;
+        *a = (temp as u64) | carry;
+        carry = (temp >> 64) as u64;
+    }
+    if carry != 0 {
+        v1.body.push(carry)
+    }
+}
+fn shl(v1: &BigInt, other: &u32) -> BigInt {
+    if other == &0 {
+        return v1.clone();
+    }
+    let mut result = BigInt {
+        neg: v1.neg,
+        body: v1.body.clone(),
+    };
+    let zeros = other / 64;
+    let shift = other % 64;
+    if zeros != 0 {
+        let app: Vec<u64> = vec![0; zeros as usize];
+        result.body.splice(0..0, app);
+    }
+    if shift == 0 {
+        return v1.clone();
+    }
+    let shift = other % 64;
+    let mut carry = 0u64;
+    for a in result.body.iter_mut() {
+        let temp = (*a as u128) << shift;
+        *a = (temp as u64) | carry;
+        carry = (temp >> 64) as u64;
+    }
+    if carry != 0 {
+        result.body.push(carry)
+    }
+    result
 }

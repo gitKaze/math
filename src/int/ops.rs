@@ -33,9 +33,9 @@ impl BigInt {
             let base_exp: Vec<&str> = input.splitn(2, "^").collect();
             let power: u64 = base_exp[1].parse().unwrap();
             result.body = pow(&str_bigint(&base_exp[0]), &power).body;
-            //if BigInt::from(power) % Self::from(2) == Self::default() {
-            //    result.neg = false
-            //}
+            if BigInt::from(power) % Self::from(2) == Self::default() {
+                result.neg = false
+            }
         } else if e || eb {
             let base_exp: Vec<&str> = if e {
                 input.splitn(2, "e").collect()
@@ -44,12 +44,13 @@ impl BigInt {
             };
             if dot {
                 let baseparts: Vec<&str> = base_exp[0].split(".").collect();
-                let power: u64 = &base_exp[1].parse().unwrap() - baseparts[1].len() as u64;
-                if power == 0 {
-                    result.body = (str_bigint(baseparts.concat())).body
+                let power: i64 = &base_exp[1].parse().unwrap() - baseparts[1].len() as i64 - 1;
+                if power <= 0 {
+                    result.body = (str_bigint(baseparts.concat())).body;
+                    return result;
                 }
                 let base = str_bigint(baseparts.concat());
-                result.body = (base * pow10(&power)).body
+                result.body = (base * pow10(&(power as u64))).body
             } else {
                 result.body = (str_bigint(base_exp[0]) * pow10(&base_exp[1].parse().unwrap())).body
             }
@@ -98,8 +99,8 @@ impl Sub<BigInt> for BigInt {
 impl Mul<BigInt> for &BigInt {
     type Output = BigInt;
     fn mul(self, rhs: BigInt) -> Self::Output {
-        let result = self.mul1(&rhs);
-        let sing = false;
+        let result = self.mul_man(&rhs);
+        let sing = self.neg ^ rhs.neg;
         let result = BigInt {
             neg: sing,
             body: result,
@@ -110,8 +111,8 @@ impl Mul<BigInt> for &BigInt {
 impl Mul<&BigInt> for &BigInt {
     type Output = BigInt;
     fn mul(self, rhs: &BigInt) -> Self::Output {
-        let result = self.mul1(rhs);
-        let sing = false;
+        let result = self.mul_man(rhs);
+        let sing = self.neg ^ rhs.neg;
         let result = BigInt {
             neg: sing,
             body: result,
@@ -122,8 +123,8 @@ impl Mul<&BigInt> for &BigInt {
 impl Mul<&BigInt> for BigInt {
     type Output = BigInt;
     fn mul(self, rhs: &BigInt) -> Self::Output {
-        let result = self.mul1(&rhs);
-        let sing = false;
+        let result = self.mul_man(&rhs);
+        let sing = self.neg ^ rhs.neg;
         let result = BigInt {
             neg: sing,
             body: result,
@@ -134,8 +135,8 @@ impl Mul<&BigInt> for BigInt {
 impl Mul<BigInt> for BigInt {
     type Output = BigInt;
     fn mul(self, rhs: Self) -> Self::Output {
-        let result = self.mul1(&rhs);
-        let sing = false;
+        let result = self.mul_man(&rhs);
+        let sing = self.neg ^ rhs.neg;
         let result = BigInt {
             neg: sing,
             body: result,
@@ -180,9 +181,12 @@ impl Add<BigInt> for BigInt {
 impl Div<&BigInt> for &BigInt {
     type Output = BigInt;
     fn div(self, rhs: &BigInt) -> Self::Output {
-        let (quo, _) = div_abs(&self, rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (quo, _) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, true),
             body: quo,
         };
     }
@@ -190,9 +194,12 @@ impl Div<&BigInt> for &BigInt {
 impl Div<BigInt> for &BigInt {
     type Output = BigInt;
     fn div(self, rhs: BigInt) -> Self::Output {
-        let (quo, _) = div_abs(&self, &rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (quo, _) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, true),
             body: quo,
         };
     }
@@ -200,9 +207,12 @@ impl Div<BigInt> for &BigInt {
 impl Div<&BigInt> for BigInt {
     type Output = BigInt;
     fn div(self, rhs: &BigInt) -> Self::Output {
-        let (quo, _) = div_abs(&self, rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (quo, _) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, true),
             body: quo,
         };
     }
@@ -210,9 +220,12 @@ impl Div<&BigInt> for BigInt {
 impl Div<BigInt> for BigInt {
     type Output = BigInt;
     fn div(self, rhs: Self) -> Self::Output {
-        let (quo, _) = div_abs(&self, &rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (quo, _) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, true),
             body: quo,
         };
     }
@@ -220,9 +233,12 @@ impl Div<BigInt> for BigInt {
 impl Rem<&BigInt> for &BigInt {
     type Output = BigInt;
     fn rem(self, rhs: &BigInt) -> Self::Output {
-        let (_, rem) = div_abs(&self, rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (_, rem) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, false),
             body: rem,
         };
     }
@@ -230,9 +246,12 @@ impl Rem<&BigInt> for &BigInt {
 impl Rem<BigInt> for &BigInt {
     type Output = BigInt;
     fn rem(self, rhs: BigInt) -> Self::Output {
-        let (_, rem) = div_abs(&self, &rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (_, rem) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, false),
             body: rem,
         };
     }
@@ -240,9 +259,12 @@ impl Rem<BigInt> for &BigInt {
 impl Rem<&BigInt> for BigInt {
     type Output = BigInt;
     fn rem(self, rhs: &BigInt) -> Self::Output {
-        let (_, rem) = div_abs(&self, rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (_, rem) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, false),
             body: rem,
         };
     }
@@ -250,9 +272,12 @@ impl Rem<&BigInt> for BigInt {
 impl Rem<BigInt> for BigInt {
     type Output = BigInt;
     fn rem(self, rhs: Self) -> Self::Output {
-        let (_, rem) = div_abs(&self, &rhs);
+        if BigInt::from(0) == self || BigInt::from(0) == rhs {
+            return BigInt::default();
+        }
+        let (_, rem) = div_man(&self, &rhs);
         return BigInt {
-            neg: self.neg,
+            neg: div_sing(self.neg, rhs.neg, false),
             body: rem,
         };
     }
@@ -481,190 +506,44 @@ impl From<u128> for BigInt {
 }
 impl ShlAssign<u32> for BigInt {
     fn shl_assign(&mut self, other: u32) {
-        if other == 0 {
-            return;
-        }
-        let zeros = other / 64;
-        let shift = other % 64;
-        if zeros != 0 {
-            let app: Vec<u64> = vec![0; zeros as usize];
-            self.body.splice(0..0, app);
-        }
-        if shift == 0 {
-            return;
-        }
-        let mut carry = 0u64;
-        for a in self.body.iter_mut() {
-            let temp = (*a as u128) << shift;
-            *a = (temp as u64) | carry;
-            carry = (temp >> 64) as u64;
-        }
-        if carry != 0 {
-            self.body.push(carry)
-        }
+        shl_ass(self, &other);
     }
 }
 impl Shl<&u32> for BigInt {
     type Output = Self;
     fn shl(self, other: &u32) -> Self::Output {
-        if other == &0 {
-            return self;
-        }
-        let mut result = BigInt {
-            neg: self.neg,
-            body: self.body.clone(),
-        };
-        let zeros = other / 64;
-        let shift = other % 64;
-        if zeros != 0 {
-            let app: Vec<u64> = vec![0; zeros as usize];
-            result.body.splice(0..0, app);
-        }
-        if shift == 0 {
-            return self;
-        }
-        let shift = other % 64;
-        let mut carry = 0u64;
-        for a in result.body.iter_mut() {
-            let temp = (*a as u128) << shift;
-            *a = (temp as u64) | carry;
-            carry = (temp >> 64) as u64;
-        }
-        if carry != 0 {
-            result.body.push(carry)
-        }
+        let result = shl(&self, other);
         result
     }
 }
 impl Shl<u32> for &BigInt {
     type Output = BigInt;
     fn shl(self, other: u32) -> Self::Output {
-        let mut result = BigInt {
-            neg: self.neg,
-            body: self.body.clone(),
-        };
-        let zeros = other / 64;
-        let shift = other % 64;
-        if zeros != 0 {
-            let app: Vec<u64> = vec![0; zeros as usize];
-            result.body.splice(0..0, app);
-        }
-        if shift == 0 {
-            return self.clone();
-        }
-        let mut carry = 0u64;
-        for a in result.body.iter_mut() {
-            let temp = (*a as u128) << shift;
-            *a = (temp as u64) | carry;
-            carry = (temp >> 64) as u64;
-        }
-        if carry != 0 {
-            result.body.push(carry)
-        }
+        let result = shl(self, &other);
         result
     }
 }
 impl Shr<u32> for BigInt {
     type Output = Self;
     fn shr(self, other: u32) -> Self::Output {
-        let mut result = BigInt {
-            neg: self.neg,
-            body: self.body.clone(),
-        };
-        let shift = other % 64;
-        let drain = other / 64;
-        if drain != 0 {
-            result.body.drain(0..min(drain as usize, result.body.len()));
-            if result.body.len() == 0 {
-                result.body = vec![0];
-                return result;
-            }
-        }
-        if shift == 0 {
-            return result;
-        }
-        let mut carry = 0u64;
-        for a in result.body.iter_mut().rev() {
-            let temp = *a;
-            *a = (*a >> shift) | carry;
-            carry = temp << (64 - shift);
-        }
-        result.body = trim(&mut result.body);
+        let result = shr(&self, &other);
         result
     }
 }
 impl Shr<u32> for &BigInt {
     type Output = BigInt;
     fn shr(self, other: u32) -> Self::Output {
-        let mut result = BigInt {
-            neg: self.neg,
-            body: self.body.clone(),
-        };
-        let shift = other % 64;
-        let drain = other / 64;
-        if drain != 0 {
-            result.body.drain(0..min(drain as usize, result.body.len()));
-            if result.body.len() == 0 {
-                result.body = vec![0];
-                return result;
-            }
-        }
-        if shift == 0 {
-            return result;
-        }
-        let mut carry = 0u64;
-        for a in result.body.iter_mut().rev() {
-            let temp = *a;
-            *a = (*a >> shift) | carry;
-            carry = temp << (64 - shift);
-        }
-        result.body = trim(&mut result.body);
+        let result = shr(self, &other);
         result
     }
 }
 impl ShrAssign<u32> for BigInt {
     fn shr_assign(&mut self, other: u32) {
-        let shift = other % 64;
-        let drain = other / 64;
-        if drain != 0 {
-            self.body.drain(0..min(drain as usize, self.body.len()));
-            if self.body.len() == 0 {
-                self.body = vec![0];
-                return;
-            }
-        }
-        if shift == 0 {
-            return;
-        }
-        let mut carry = 0u64;
-        for a in self.body.iter_mut().rev() {
-            let temp = *a;
-            *a = (*a >> shift) | carry;
-            carry = temp << (64 - shift);
-        }
-        self.body = trim(&mut self.body);
+        shr_ass(self, &other);
     }
 }
 impl ShrAssign<&u32> for BigInt {
     fn shr_assign(&mut self, other: &u32) {
-        let shift = other % 64;
-        let drain = other / 64;
-        if drain != 0 {
-            self.body.drain(0..min(drain as usize, self.body.len()));
-            if self.body.len() == 0 {
-                self.body = vec![0];
-                return;
-            }
-        }
-        if shift == 0 {
-            return;
-        }
-        let mut carry = 0u64;
-        for a in self.body.iter_mut().rev() {
-            let temp = *a;
-            *a = (*a >> shift) | carry;
-            carry = temp << (64 - shift);
-        }
-        self.body = trim(&mut self.body);
+        shr_ass(self, other);
     }
 }
