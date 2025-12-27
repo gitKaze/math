@@ -1,9 +1,8 @@
-//shift assignment shift left right then make div X by 1 && div X<4 by 2 also make sings for mul and div so you can test this
+//signs for mul and div short division X by 1 and 1 by 1
 #[allow(unused)]
 use rayon::iter::*;
 #[allow(unused)]
 use rayon::prelude::*;
-use std::borrow::Cow;
 use std::iter::zip;
 
 include!("ops.rs");
@@ -384,20 +383,15 @@ fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
         (dividend % *divs as u128), //remainder
     );
 }
-fn normalize<'a>(v1: &'a BigInt, v2: &'a BigInt) -> (Cow<'a, BigInt>, Cow<'a, BigInt>) {
-    let off = v2.body.last().unwrap().leading_zeros();
-    (Cow::Owned(v1 << off), Cow::Owned(v2 << off))
-}
 
 fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let ld = v2.body.last().unwrap().leading_zeros();
-    let (d, d2) = normalize(v1, v2);
-    let mut dividend = d.into_owned();
+    let mut dividend = v1 << ld;
     dividend.body.push(0);
-    let divisor = d2.into_owned();
+    let divisor = v2 << ld;
     let (n, m) = (divisor.body.len(), dividend.body.len());
     let mut result: Vec<u64> = vec![0; m - n + 1];
-    for i in (0..=(m - n)).rev() {
+    for i in (0..(m - n)).rev() {
         let (h1, h2, d1) = (
             dividend.body[i + n],
             dividend.body[i + n - 1],
@@ -437,6 +431,15 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
         result[i] = quo as u64
     }
     dividend >>= ld;
-    trim(&mut dividend.body);
+    dividend.body = trim(&mut dividend.body);
+    result = trim(&mut result);
     (result, dividend.body)
+}
+#[allow(unused)]
+fn sh_div_abs(_v1: &BigInt, _v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    todo!("short division of x by 1")
+}
+#[allow(unused)]
+fn div_1_1_abs(_v1: &BigInt, _v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+    todo!("short division of 1 by 1")
 }
