@@ -1,18 +1,15 @@
 #[allow(unused)]
 #[allow(unused)]
-use crate::int::int::{BigInt, pow, pow10};
+use crate::float::float::BigFloat;
+use crate::int::int::*;
 use std::{thread::sleep, time::Duration};
+mod float;
 mod int;
 fn main() {
-    let mut l1 = BigInt::from("2");
-    l1 <<= 68;
-    println!("shifted {:?}", l1);
-    l1 >>= 67;
-    println!("shifted {:?}", l1);
-    let mut l2 = BigInt::from("2^64");
-    l2 += BigInt::from(10);
-    l1 = l1 / l2;
-    println!("result {:?}", l1);
+    let l1 = BigInt::from("2^9876");
+    println!("res {}", l1);
+    let _l2 = BigInt::from("-45");
+    println!("result {}", l1);
     sleep(Duration::from_secs(1));
     for _ in 0..0 {
         println!("Start");

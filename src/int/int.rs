@@ -345,6 +345,7 @@ pub fn pow10(power: &u64) -> BigInt {
 
     return res;
 }
+#[inline(always)]
 pub fn pow(base: &BigInt, power: &u64) -> BigInt {
     if power < &0 {
         return BigInt::default();
@@ -383,6 +384,7 @@ pub fn pow(base: &BigInt, power: &u64) -> BigInt {
     }
     return res;
 }
+#[inline(always)]
 fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
     let dividend = ((*hi as u128) << 64) | (*low as u128);
     return (
@@ -390,7 +392,7 @@ fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
         (dividend % *divs as u128), //remainder
     );
 }
-
+#[inline(always)]
 fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let ld = v2.body.last().unwrap().leading_zeros();
     let mut dividend = v1 << ld;
@@ -442,6 +444,7 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     result = trim(&mut result);
     (result, dividend.body) //quo,rem
 }
+#[inline(always)]
 fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let (mut rem, len) = (0u128, v1.body.len());
     let mut quo: u128;
@@ -453,6 +456,7 @@ fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     result = trim(&mut result);
     return (result, vec![rem as u64]); //quo,rem
 }
+#[inline(always)]
 fn div_1_1_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     return (vec![v1.body[0] / v2.body[0]], vec![v1.body[0] % v2.body[0]]);
 }
