@@ -16,7 +16,7 @@ impl BigInt {
             (false, input)
         };
         if !input.chars().all(|c| match c {
-            '0'..'9' | '.' | '^' | 'e' | 'E' => true,
+            '0'..='9' | '.' | '^' | 'e' | 'E' => true,
             _ => false,
         }) {
             return BigInt::default();
@@ -33,7 +33,7 @@ impl BigInt {
             let base_exp: Vec<&str> = input.splitn(2, "^").collect();
             let power: u64 = base_exp[1].parse().unwrap();
             result.body = pow(&str_bigint(&base_exp[0]), &power).body;
-            if BigInt::from(power) % Self::from(2) == Self::default() {
+            if (BigInt::from(power) % Self::from(2)) == Self::default() {
                 result.neg = false
             }
         } else if e || eb {
@@ -381,8 +381,26 @@ impl PartialEq for BigInt {
     }
 }
 impl fmt::Display for BigInt {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!("y")
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut number = self.clone();
+        number.neg = false;
+        let mut rem: Vec<u64>;
+        let mut string: Vec<String> = Vec::new();
+        let chunk = BigInt::from("10^18");
+        while number != BigInt::from(0) {
+            (number.body, rem) = sh_div_abs(&number, &chunk);
+            if number == BigInt::from(0) {
+                string.push(rem[0].to_string());
+                break;
+            }
+            string.push(format!("{:018}", rem[0]));
+        }
+        if self.neg == true {
+            string.push("-".to_string());
+        }
+        string.reverse();
+        let result = string.join("");
+        write!(f, "{}", result)
     }
 }
 impl Default for BigInt {

@@ -381,7 +381,6 @@ pub fn pow(base: &BigInt, power: &u64) -> BigInt {
         }
         n >>= 1;
     }
-
     return res;
 }
 fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
