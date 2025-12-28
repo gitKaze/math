@@ -188,7 +188,7 @@ impl Div<&BigFloat> for &BigFloat {
         v1.denormalize(PRECISION.load(Ordering::Relaxed) as i32);
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
-            exp: v1.exp - rhs.exp,
+            exp: v1.exp,
         };
         result.normalize();
         result
@@ -292,5 +292,75 @@ impl From<&str> for BigFloat {
         };
         result.normalize();
         result
+    }
+}
+impl From<BigInt> for BigFloat {
+    fn from(value: BigInt) -> BigFloat {
+        let mut result = BigFloat {
+            exp: 0,
+            body: value,
+        };
+        result.normalize();
+        result
+    }
+}
+impl From<&BigInt> for BigFloat {
+    fn from(value: &BigInt) -> BigFloat {
+        let mut result = BigFloat {
+            exp: 0,
+            body: value.clone(),
+        };
+        result.normalize();
+        result
+    }
+}
+#[allow(unused)]
+fn parse_float<T: AsRef<str>>(input: T) -> BigFloat {
+    let input: &str = input.as_ref();
+    let input = input.trim();
+    if !input.chars().all(|c| match c {
+        '0'..='9' | '.' | '^' | 'e' | 'E' | '-' => true,
+        _ => false,
+    }) {
+        panic!("wrong input")
+    }
+    let (e, eb, p, dot): (bool, bool, bool, bool) = (
+        input.contains("e"),
+        input.contains("E"),
+        input.contains("^"),
+        input.contains("."),
+    );
+    match (e, eb, p, dot) {
+        (a, b, false, true) if a || b => to_float(input),
+        (false, false, true, true) => {
+            let a: Vec<&str> = input.splitn(2, "^").collect();
+            if a[1].contains(".") {
+                let power = to_float(a[1]);
+                return pow_f(to_float(a[0]), power);
+            }
+            let result = BigFloat {
+                body: pow(&to_float(a[0]).body, &(a[1].parse().unwrap())),
+                exp: PRECISION.load(Ordering::Relaxed),
+            };
+            result
+        }
+        (false, false, false, true) => to_float(input),
+        _ => BigFloat::from(BigInt::from(input)),
+    }
+}
+#[allow(unused)]
+fn to_float(_input: &str) -> BigFloat {
+    BigFloat::default()
+}
+#[allow(unused)]
+fn pow_f(base: BigFloat, power: BigFloat) -> BigFloat {
+    todo!(
+        "возвведение AGM  для а для этого надо сделать расчет pi желательно как константу которая считается когда изменяется точность "
+    )
+}
+#[allow(unused)]
+impl fmt::Display for BigFloat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!("bigfloat printing")
     }
 }

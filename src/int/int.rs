@@ -28,8 +28,8 @@ const POWS10: &[u64] = &[
 ];
 #[derive(Debug, Clone)]
 pub struct BigInt {
-    pub neg: bool,
-    pub body: Vec<u64>,
+    neg: bool,
+    body: Vec<u64>,
 }
 impl BigInt {
     fn add_sing(&self, other: &Self) -> BigInt {
@@ -184,7 +184,8 @@ impl BigInt {
                 }
             }
         }
-        trim(&mut result)
+        trim(&mut result);
+        result
     }
     #[inline(always)]
     fn sub_abs_ass(&mut self, other: &Self) {
@@ -197,8 +198,7 @@ impl BigInt {
                     break;
                 }
             }
-            self.body = trim(&mut self.body);
-            return;
+            trim(&mut self.body);
         };
         let mut borrow: bool = false;
         for (a, b) in zip(self.body.iter_mut(), other.body.iter()) {
@@ -212,7 +212,7 @@ impl BigInt {
                 }
             }
         }
-        self.body = trim(&mut self.body);
+        trim(&mut self.body);
     }
     #[inline(always)]
     fn add_abs_ass(&mut self, other: &Self) {
@@ -289,7 +289,7 @@ impl BigInt {
                 (result[i1 + i2 + 1], c2) = result[i1 + i2 + 1].carrying_add(hi, c1);
             }
         }
-        result = trim(&mut result);
+        trim(&mut result);
         return result;
     }
 }
@@ -301,13 +301,12 @@ fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
     }
 }
 #[inline(always)]
-fn trim(val: &mut Vec<u64>) -> Vec<u64> {
+fn trim(val: &mut Vec<u64>) {
     let mut s = val.len() - 1;
     while s != 0 && val[s] == 0 {
         val.pop();
         s -= 1
     }
-    return std::mem::take(val);
 }
 fn str_bigint<T: AsRef<str>>(str: T) -> BigInt {
     let str = str.as_ref();
@@ -440,8 +439,8 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
         result[i] = quo as u64
     }
     dividend >>= ld;
-    dividend.body = trim(&mut dividend.body);
-    result = trim(&mut result);
+    trim(&mut dividend.body);
+    trim(&mut result);
     (result, dividend.body) //quo,rem
 }
 #[inline(always)]
@@ -453,7 +452,7 @@ fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
         (quo, rem) = div_ww_w(&(rem as u64), a, &v2.body[0]);
         *b = quo as u64
     }
-    result = trim(&mut result);
+    trim(&mut result);
     return (result, vec![rem as u64]); //quo,rem
 }
 #[inline(always)]
@@ -483,12 +482,13 @@ fn shr_ass(v1: &mut BigInt, other: &u32) {
     let shift = other % 64;
     let drain = other / 64;
     if drain != 0 {
-        v1.body.drain(0..min(drain as usize, v1.body.len()));
-        if v1.body.len() == 0 {
+        if v1.body.len() == drain as usize {
             v1.body = vec![0];
             return;
         }
+        v1.body = v1.body[((drain - 1) as usize)..].to_vec();
     }
+
     if shift == 0 {
         return;
     }
@@ -498,7 +498,7 @@ fn shr_ass(v1: &mut BigInt, other: &u32) {
         *a = (*a >> shift) | carry;
         carry = temp << (64 - shift);
     }
-    v1.body = trim(&mut v1.body);
+    trim(&mut v1.body);
 }
 fn shr(v1: &BigInt, other: &u32) -> BigInt {
     let mut result = BigInt {
@@ -508,12 +508,13 @@ fn shr(v1: &BigInt, other: &u32) -> BigInt {
     let shift = other % 64;
     let drain = other / 64;
     if drain != 0 {
-        result.body.drain(0..min(drain as usize, result.body.len()));
-        if result.body.len() == 0 {
+        if result.body.len() == drain as usize {
             result.body = vec![0];
             return result;
         }
+        result.body = result.body[((drain - 1) as usize)..].to_vec();
     }
+
     if shift == 0 {
         return result;
     }
@@ -523,7 +524,7 @@ fn shr(v1: &BigInt, other: &u32) -> BigInt {
         *a = (*a >> shift) | carry;
         carry = temp << (64 - shift);
     }
-    result.body = trim(&mut result.body);
+    trim(&mut result.body);
     result
 }
 fn shl_ass(v1: &mut BigInt, other: &u32) {

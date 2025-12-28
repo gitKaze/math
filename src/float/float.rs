@@ -1,5 +1,7 @@
 use crate::int::int::*;
+use std::fmt;
 use std::ops::*;
+use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU32, Ordering};
 include!("ops.rs");
 #[derive(Debug, Clone)]
@@ -7,6 +9,10 @@ pub struct BigFloat {
     body: BigInt,
     exp: u32,
 }
+#[allow(unused)]
+static E: OnceLock<BigFloat> = OnceLock::new();
+#[allow(unused)]
+static PI: OnceLock<BigFloat> = OnceLock::new();
 static PRECISION: AtomicU32 = AtomicU32::new(20);
 impl BigFloat {
     #[allow(unused)]
@@ -39,4 +45,12 @@ impl BigFloat {
         }
         self.exp = b;
     }
+}
+#[allow(unused)]
+fn calc_pi(precision: u32) -> BigFloat {
+    todo!("d")
+}
+#[allow(unused)]
+fn calc_e(precision: u32) -> BigFloat {
+    todo!("")
 }

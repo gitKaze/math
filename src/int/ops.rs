@@ -1,10 +1,8 @@
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use std::cmp::min;
 #[allow(unused)]
-use std::{
-    fmt,
-    ops::{Add, AddAssign, Div, Mul, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign},
-};
+use std::{fmt, ops::*};
+
 impl BigInt {
     fn parse<T: AsRef<str>>(input: T) -> Self {
         let mut result = Self::default();
@@ -516,9 +514,11 @@ impl From<&u64> for BigInt {
 }
 impl From<u128> for BigInt {
     fn from(value: u128) -> Self {
+        let mut v = vec![value as u64, (value >> 64) as u64];
+        trim(&mut v);
         Self {
             neg: false,
-            body: trim(&mut vec![value as u64, (value >> 64) as u64]),
+            body: v,
         }
     }
 }
