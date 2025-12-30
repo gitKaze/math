@@ -1,21 +1,97 @@
 #[allow(unused)]
 #[allow(unused)]
 use crate::float::float::*;
+#[allow(unused)]
 use crate::int::int::*;
-use std::{thread::sleep, time::Duration};
+use std::time::Instant;
 mod float;
 mod int;
+fn test(i1: &str, i2: &str) {
+    let (v1, v2, v3, v4) = (
+        BigInt::from(i1),
+        BigInt::from(i2),
+        BigFloat::from(i1),
+        BigFloat::from(i2),
+    );
+    println!("BigInt:");
+    println!("values {} | {}", v1, v2);
+    println!("multiplication:");
+    let t = Instant::now();
+    let temp = &v1 * &v2;
+    let end = Instant::elapsed(&t);
+    println!("result {} completed in {:?}", temp, end);
+    println!("addition:");
+    let t = Instant::now();
+    let temp = &v1 + &v2;
+    let end = Instant::elapsed(&t);
+    println!("result {} completed in {:?}", temp, end);
+    println!("substraction:");
+    let t = Instant::now();
+    let temp = &v1 - &v2;
+    let end = Instant::elapsed(&t);
+    println!("result {} completed in {:?}", temp, end);
+    println!("division:");
+    let t = Instant::now();
+    let temp = &v1 / &v2;
+    let end = Instant::elapsed(&t);
+    println!("result {} completed in {:?}", temp, end);
+    println!("remainder:");
+    let t = Instant::now();
+    let temp = &v1 % &v2;
+    let end = Instant::elapsed(&t);
+    println!("result {} completed in {:?}\n\n\n", temp, end);
+    println!("BigFloat with  precition of {}:", v3.exp - 2);
+    println!("values {} | {}", v3, v4);
+    println!("{:?} | {:?}", v3, v4);
+    println!("multiplication:");
+    let t = Instant::now();
+    let temp = &v3 * &v4;
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("addition:");
+    let t = Instant::now();
+    let temp = &v3 + &v4;
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("substraction:");
+    let t = Instant::now();
+    let temp = &v3 - &v4;
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("division:");
+    let t = Instant::now();
+    let temp = &v3 / &v4;
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("square root:");
+    let t = Instant::now();
+    let temp = sqrt(&v3);
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("cube root:");
+    let t = Instant::now();
+    let temp = cbrt(&v3);
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("square root:");
+    let t = Instant::now();
+    let temp = sqrt(&v4);
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+    println!("cube root:");
+    let t = Instant::now();
+    let temp = cbrt(&v4);
+    let end = Instant::elapsed(&t);
+    println!("{:?}", temp);
+    println!("result {} completed in {:?}", temp, end);
+}
 fn main() {
-    let l1 = BigInt::from("2^9876");
-    println!("res {}", l1);
-    let _l2 = BigInt::from("-45");
-    println!("result {}", l1);
-    sleep(Duration::from_secs(1));
-    for _ in 0..0 {
-        println!("Start");
-        let c1 = std::time::Instant::now();
-        let c2 = c1.elapsed().as_micros();
-        println!("result {:?}", l1);
-        println!("time {}  mcs", c2);
-    }
+    test("2^64", "2^128");
 }

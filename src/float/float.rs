@@ -1,49 +1,36 @@
 use crate::int::int::*;
-use std::fmt;
-use std::ops::*;
 use std::sync::OnceLock;
-use std::sync::atomic::{AtomicU32, Ordering};
-include!("ops.rs");
+use std::sync::atomic::{AtomicU64, Ordering};
+
 #[derive(Debug, Clone)]
 pub struct BigFloat {
-    body: BigInt,
-    exp: u32,
+    pub(crate) body: BigInt,
+    pub(crate) exp: u64,
 }
 #[allow(unused)]
 static E: OnceLock<BigFloat> = OnceLock::new();
 #[allow(unused)]
 static PI: OnceLock<BigFloat> = OnceLock::new();
-static PRECISION: AtomicU32 = AtomicU32::new(20);
+pub(crate) static PRECISION: AtomicU64 = AtomicU64::new(4);
 impl BigFloat {
     #[allow(unused)]
-    fn precision(value: u32) {
-        PRECISION.store(value, Ordering::Relaxed);
+    fn precision(value: u64) {
+        PRECISION.store(value + 2, Ordering::Relaxed);
     }
-    fn normalize(&mut self) {
+    pub(crate) fn normalize(&mut self) {
         let v = PRECISION.load(Ordering::Relaxed);
         if self.exp != v {
             if self.exp < v {
-                self.body <<= 64 * (v - self.exp) as u32;
+                self.body <<= 64 * (v - self.exp);
             } else {
-                self.body >>= 64 * (self.exp - v) as u32;
+                self.body >>= 64 * (self.exp - v);
             }
         };
         self.exp = v;
     }
-    fn denormalize(&mut self, change: i32) {
-        let mut v = self.exp as i32 + change;
-        if v <= 0 {
-            panic!("negative or 0 exp")
-        } else {
-            v = v.abs();
-        }
-        let b = v as u32;
-        if self.exp < b {
-            self.body <<= 64 * (b - self.exp) as u32;
-        } else {
-            self.body >>= 64 * (self.exp - b) as u32;
-        }
-        self.exp = b;
+    pub(crate) fn denormalize(&mut self, change: u64) {
+        self.exp += change;
+        self.body <<= 64 * change;
     }
 }
 #[allow(unused)]
@@ -53,4 +40,37 @@ fn calc_pi(precision: u32) -> BigFloat {
 #[allow(unused)]
 fn calc_e(precision: u32) -> BigFloat {
     todo!("")
+}
+#[allow(unused)]
+pub fn cbrt(v1: &BigFloat) -> BigFloat {
+    let mut guess: BigFloat = BigFloat::from(pow10(&((v1.body.len() / 3) as u64)));
+    let (mut current, target) = (1 as u64, PRECISION.load(Ordering::Relaxed) * 64 as u64);
+    let two = BigFloat {
+        body: BigInt::from(2),
+        exp: 0,
+    };
+    let x2 = &two * v1;
+    while current < target {
+        let x1 = &guess * &guess * &guess;
+
+        guess = &guess * &((&x1 + &x2) / ((&two * &x1) + v1));
+        current *= 3
+    }
+    guess
+}
+#[allow(unused)]
+pub fn sqrt(v1: &BigFloat) -> BigFloat {
+    let mut guess: BigFloat = BigFloat::from(pow10(&((v1.body.len() / 2) as u64)));
+    let (mut current, target) = (1 as u64, PRECISION.load(Ordering::Relaxed) * 64 as u64);
+    let two = BigFloat {
+        body: BigInt::from(2),
+        exp: 0,
+    };
+    while current < target {
+        let x2 = &guess;
+        let x1 = &guess * &guess;
+        guess = (&x1 + v1) / (x2 * &two);
+        current *= 2
+    }
+    guess
 }

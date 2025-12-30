@@ -1,10 +1,9 @@
+use core::cmp::{Ord, Ordering};
 #[allow(unused)]
 use rayon::iter::*;
 #[allow(unused)]
 use rayon::prelude::*;
 use std::iter::zip;
-
-include!("ops.rs");
 const POWS10: &[u64] = &[
     1,
     10,
@@ -28,11 +27,11 @@ const POWS10: &[u64] = &[
 ];
 #[derive(Debug, Clone)]
 pub struct BigInt {
-    neg: bool,
-    body: Vec<u64>,
+    pub(crate) neg: bool,
+    pub(crate) body: Vec<u64>,
 }
 impl BigInt {
-    fn add_sing(&self, other: &Self) -> BigInt {
+    pub(crate) fn add_sing(&self, other: &Self) -> BigInt {
         match (self.neg, other.neg) {
             (true, true) => BigInt {
                 neg: true,
@@ -70,7 +69,7 @@ impl BigInt {
             }
         }
     }
-    fn add_sing_ass(&mut self, other: &Self) {
+    pub(crate) fn add_sing_ass(&mut self, other: &Self) {
         match (self.neg, other.neg) {
             (true, true) => {
                 self.add_abs_ass(other);
@@ -100,7 +99,7 @@ impl BigInt {
             }
         }
     }
-    fn sub_sing_ass(&mut self, other: &Self) {
+    pub(crate) fn sub_sing_ass(&mut self, other: &Self) {
         if self.neg && other.neg {
             if *self < other {
                 self.sub_abs_ass(other);
@@ -125,7 +124,7 @@ impl BigInt {
             }
         };
     }
-    fn sub_sing(&self, other: &Self) -> BigInt {
+    pub(crate) fn sub_sing(&self, other: &Self) -> BigInt {
         if self.neg && other.neg {
             if self < other {
                 return BigInt {
@@ -163,13 +162,13 @@ impl BigInt {
         };
     }
     #[inline(always)]
-    fn sub_abs(&self, other: &Self) -> Vec<u64> {
+    pub(crate) fn sub_abs(&self, other: &Self) -> Vec<u64> {
         let (v1, v2) = if cmp_abs(self, other) == -1 {
-            (self, other)
+            (other, self)
         } else if cmp_abs(self, other) == 0 {
             return vec![0];
         } else {
-            (other, self)
+            (self, other)
         };
         let mut result = v1.body.clone();
         let mut borrow: bool = false;
@@ -188,7 +187,7 @@ impl BigInt {
         result
     }
     #[inline(always)]
-    fn sub_abs_ass(&mut self, other: &Self) {
+    pub(crate) fn sub_abs_ass(&mut self, other: &Self) {
         if *self < other {
             let mut borrow: bool = false;
             self.body.resize(other.body.len(), 0);
@@ -215,7 +214,7 @@ impl BigInt {
         trim(&mut self.body);
     }
     #[inline(always)]
-    fn add_abs_ass(&mut self, other: &Self) {
+    pub(crate) fn add_abs_ass(&mut self, other: &Self) {
         let (mut l1, mut l2) = (self.body.len(), other.body.len());
         if l1 < l2 {
             self.body.resize(l2, 0);
@@ -238,7 +237,7 @@ impl BigInt {
         }
     }
     #[inline(always)]
-    fn add_abs(&self, other: &Self) -> Vec<u64> {
+    pub(crate) fn add_abs(&self, other: &Self) -> Vec<u64> {
         let (l1, l2) = (self.body.len(), other.body.len());
         let (v1, v2, l1, mut l2) = if l1 > l2 {
             (self, other, l1, l2)
@@ -260,7 +259,7 @@ impl BigInt {
         }
         return result;
     }
-    fn mul_man(&self, v2: &Self) -> Vec<u64> {
+    pub(crate) fn mul_man(&self, v2: &Self) -> Vec<u64> {
         let (l1, l2) = (self.body.len(), v2.body.len());
         match (l1, l2) {
             (a, b) if a < 50 || b < 50 => self.mul1(v2),
@@ -270,7 +269,7 @@ impl BigInt {
         }
     }
     #[inline(always)]
-    fn mul1(&self, other: &Self) -> Vec<u64> {
+    pub(crate) fn mul1(&self, other: &Self) -> Vec<u64> {
         let (s1, s2) = (self.body.len(), other.body.len());
         let mut result: Vec<u64> = vec![0; s1 + s2];
         let mut c1: bool;
@@ -293,7 +292,7 @@ impl BigInt {
         return result;
     }
 }
-fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
+pub(crate) fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
     match v1.body.cmp(&v2.body) {
         Ordering::Greater => 1,
         Ordering::Equal => 0,
@@ -301,14 +300,14 @@ fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
     }
 }
 #[inline(always)]
-fn trim(val: &mut Vec<u64>) {
+pub(crate) fn trim(val: &mut Vec<u64>) {
     let mut s = val.len() - 1;
     while s != 0 && val[s] == 0 {
         val.pop();
         s -= 1
     }
 }
-fn str_bigint<T: AsRef<str>>(str: T) -> BigInt {
+pub(crate) fn str_bigint<T: AsRef<str>>(str: T) -> BigInt {
     let str = str.as_ref();
     let (mut start, mut end, size, mut result) = (0, 0, str.len(), BigInt::default());
     while start != size {
@@ -444,7 +443,7 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     (result, dividend.body) //quo,rem
 }
 #[inline(always)]
-fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+pub(crate) fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let (mut rem, len) = (0u128, v1.body.len());
     let mut quo: u128;
     let mut result: Vec<u64> = vec![0; len];
@@ -456,10 +455,10 @@ fn sh_div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     return (result, vec![rem as u64]); //quo,rem
 }
 #[inline(always)]
-fn div_1_1_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+pub(crate) fn div_1_1_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     return (vec![v1.body[0] / v2.body[0]], vec![v1.body[0] % v2.body[0]]);
 }
-fn div_sing(sing1: bool, sing2: bool, method: bool) -> bool {
+pub(crate) fn div_sing(sing1: bool, sing2: bool, method: bool) -> bool {
     match (sing1, sing2, method) {
         (true, true, true) => false,
         (false, false, true) => false,
@@ -469,7 +468,7 @@ fn div_sing(sing1: bool, sing2: bool, method: bool) -> bool {
         (false, _, false) => false,
     }
 }
-fn div_man(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
+pub(crate) fn div_man(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let (l1, l2) = (v1.body.len(), v2.body.len());
     match (l1, l2) {
         (1, 1) => div_1_1_abs(v1, v2),
@@ -478,15 +477,16 @@ fn div_man(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
         _ => div_abs(v1, v2),
     }
 }
-fn shr_ass(v1: &mut BigInt, other: &u32) {
+pub(crate) fn shr_ass(v1: &mut BigInt, other: &u128) {
     let shift = other % 64;
     let drain = other / 64;
     if drain != 0 {
-        if v1.body.len() == drain as usize {
+        if v1.body.len() == drain as usize || v1.body.len() < drain as usize {
             v1.body = vec![0];
             return;
         }
-        v1.body = v1.body[((drain - 1) as usize)..].to_vec();
+        v1.body = v1.body[((drain) as usize)..].to_vec();
+        return;
     }
 
     if shift == 0 {
@@ -500,7 +500,7 @@ fn shr_ass(v1: &mut BigInt, other: &u32) {
     }
     trim(&mut v1.body);
 }
-fn shr(v1: &BigInt, other: &u32) -> BigInt {
+pub(crate) fn shr(v1: &BigInt, other: &u128) -> BigInt {
     let mut result = BigInt {
         neg: v1.neg,
         body: v1.body.clone(),
@@ -514,7 +514,6 @@ fn shr(v1: &BigInt, other: &u32) -> BigInt {
         }
         result.body = result.body[((drain - 1) as usize)..].to_vec();
     }
-
     if shift == 0 {
         return result;
     }
@@ -527,7 +526,7 @@ fn shr(v1: &BigInt, other: &u32) -> BigInt {
     trim(&mut result.body);
     result
 }
-fn shl_ass(v1: &mut BigInt, other: &u32) {
+pub(crate) fn shl_ass(v1: &mut BigInt, other: &u128) {
     if *other == 0 {
         return;
     }
@@ -536,6 +535,7 @@ fn shl_ass(v1: &mut BigInt, other: &u32) {
     if zeros != 0 {
         let app: Vec<u64> = vec![0; zeros as usize];
         v1.body.splice(0..0, app);
+        return;
     }
     if shift == 0 {
         return;
@@ -550,7 +550,7 @@ fn shl_ass(v1: &mut BigInt, other: &u32) {
         v1.body.push(carry)
     }
 }
-fn shl(v1: &BigInt, other: &u32) -> BigInt {
+pub(crate) fn shl(v1: &BigInt, other: &u128) -> BigInt {
     if other == &0 {
         return v1.clone();
     }
@@ -578,4 +578,8 @@ fn shl(v1: &BigInt, other: &u32) -> BigInt {
         result.body.push(carry)
     }
     result
+}
+#[allow(unused)]
+fn fft(_v1: &BigInt, _v2: &BigInt) -> BigInt {
+    todo!("d")
 }

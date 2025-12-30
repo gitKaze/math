@@ -1,9 +1,12 @@
+use crate::int::int::*;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
-use std::cmp::min;
+use std::iter::zip;
 #[allow(unused)]
 use std::{fmt, ops::*};
-
 impl BigInt {
+    pub fn len(&self) -> usize {
+        return self.body.len();
+    }
     fn parse<T: AsRef<str>>(input: T) -> Self {
         let mut result = Self::default();
         let input: &str = input.as_ref();
@@ -382,6 +385,9 @@ impl fmt::Display for BigInt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut number = self.clone();
         number.neg = false;
+        if number == BigInt::from(0) {
+            return write!(f, "0");
+        }
         let mut rem: Vec<u64>;
         let mut string: Vec<String> = Vec::new();
         let chunk = BigInt::from("10^18");
@@ -429,6 +435,25 @@ impl From<usize> for BigInt {
         Self {
             neg: false,
             body: vec![value as u64],
+        }
+    }
+}
+impl From<&Vec<u64>> for BigInt {
+    fn from(value: &Vec<u64>) -> Self {
+        Self {
+            neg: false,
+            body: value.clone(),
+        }
+    }
+}
+impl From<&[u64]> for BigInt {
+    fn from(value: &[u64]) -> Self {
+        if value.is_empty() {
+            return BigInt::default();
+        }
+        Self {
+            neg: false,
+            body: value.to_vec().clone(),
         }
     }
 }
@@ -524,44 +549,125 @@ impl From<u128> for BigInt {
 }
 impl ShlAssign<u32> for BigInt {
     fn shl_assign(&mut self, other: u32) {
-        shl_ass(self, &other);
+        shl_ass(self, &(other as u128));
     }
 }
 impl Shl<&u32> for BigInt {
     type Output = Self;
     fn shl(self, other: &u32) -> Self::Output {
-        let result = shl(&self, other);
+        let result = shl(&self, &(*other as u128));
         result
     }
 }
 impl Shl<u32> for &BigInt {
     type Output = BigInt;
     fn shl(self, other: u32) -> Self::Output {
-        let result = shl(self, &other);
+        let result = shl(self, &(other as u128));
         result
     }
 }
 impl Shr<u32> for BigInt {
     type Output = Self;
     fn shr(self, other: u32) -> Self::Output {
-        let result = shr(&self, &other);
+        let result = shr(&self, &(other as u128));
         result
     }
 }
 impl Shr<u32> for &BigInt {
     type Output = BigInt;
     fn shr(self, other: u32) -> Self::Output {
-        let result = shr(self, &other);
+        let result = shr(self, &(other as u128));
         result
     }
 }
 impl ShrAssign<u32> for BigInt {
     fn shr_assign(&mut self, other: u32) {
-        shr_ass(self, &other);
+        shr_ass(self, &(other as u128));
     }
 }
 impl ShrAssign<&u32> for BigInt {
     fn shr_assign(&mut self, other: &u32) {
+        shr_ass(self, &(*other as u128));
+    }
+}
+impl ShlAssign<u128> for BigInt {
+    fn shl_assign(&mut self, other: u128) {
+        shl_ass(self, &(other as u128));
+    }
+}
+impl Shl<&u128> for BigInt {
+    type Output = Self;
+    fn shl(self, other: &u128) -> Self::Output {
+        let result = shl(&self, other);
+        result
+    }
+}
+impl Shl<u128> for &BigInt {
+    type Output = BigInt;
+    fn shl(self, other: u128) -> Self::Output {
+        let result = shl(self, &other);
+        result
+    }
+}
+impl Shr<u128> for BigInt {
+    type Output = Self;
+    fn shr(self, other: u128) -> Self::Output {
+        let result = shr(&self, &other);
+        result
+    }
+}
+impl Shr<&u128> for &BigInt {
+    type Output = BigInt;
+    fn shr(self, other: &u128) -> Self::Output {
+        let result = shr(self, &other);
+        result
+    }
+}
+impl ShrAssign<u128> for BigInt {
+    fn shr_assign(&mut self, other: u128) {
+        shr_ass(self, &other);
+    }
+}
+impl ShrAssign<&u128> for BigInt {
+    fn shr_assign(&mut self, other: &u128) {
         shr_ass(self, other);
+    }
+}
+impl ShlAssign<u64> for BigInt {
+    fn shl_assign(&mut self, other: u64) {
+        shl_ass(self, &(other as u128));
+    }
+}
+impl Shl<&u64> for BigInt {
+    type Output = Self;
+    fn shl(self, other: &u64) -> Self::Output {
+        let result = shl(&self, &(*other as u128));
+        result
+    }
+}
+impl Shl<u64> for &BigInt {
+    type Output = BigInt;
+    fn shl(self, other: u64) -> Self::Output {
+        let result = shl(self, &(other as u128));
+        result
+    }
+}
+impl Shr<u64> for BigInt {
+    type Output = Self;
+    fn shr(self, other: u64) -> Self::Output {
+        let result = shr(&self, &(other as u128));
+        result
+    }
+}
+impl Shr<u64> for &BigInt {
+    type Output = BigInt;
+    fn shr(self, other: u64) -> Self::Output {
+        let result = shr(self, &(other as u128));
+        result
+    }
+}
+impl ShrAssign<u64> for BigInt {
+    fn shr_assign(&mut self, other: u64) {
+        shr_ass(self, &(other as u128));
     }
 }

@@ -1,3 +1,9 @@
+use crate::float::float::*;
+use crate::int::int::*;
+use std::fmt;
+use std::sync::atomic::Ordering;
+#[allow(unused)]
+use std::{cmp::*, ops::*};
 impl Add<BigFloat> for BigFloat {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
@@ -105,7 +111,9 @@ impl Mul<BigFloat> for BigFloat {
             exp: self.exp + rhs.exp,
             body: &self.body * &rhs.body,
         };
+
         result.normalize();
+
         result
     }
 }
@@ -146,7 +154,7 @@ impl Div<BigFloat> for BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: BigFloat) -> Self::Output {
         let mut v1 = self;
-        v1.denormalize(PRECISION.load(Ordering::Relaxed) as i32);
+        v1.denormalize(PRECISION.load(Ordering::Relaxed));
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -159,7 +167,7 @@ impl Div<&BigFloat> for BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: &BigFloat) -> Self::Output {
         let mut v1 = self;
-        v1.denormalize(PRECISION.load(Ordering::Relaxed) as i32);
+        v1.denormalize(PRECISION.load(Ordering::Relaxed));
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -172,7 +180,7 @@ impl Div<BigFloat> for &BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: BigFloat) -> Self::Output {
         let mut v1 = self.clone();
-        v1.denormalize(PRECISION.load(Ordering::Relaxed) as i32);
+        v1.denormalize(PRECISION.load(Ordering::Relaxed));
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -185,12 +193,11 @@ impl Div<&BigFloat> for &BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: &BigFloat) -> Self::Output {
         let mut v1 = self.clone();
-        v1.denormalize(PRECISION.load(Ordering::Relaxed) as i32);
-        let mut result = BigFloat {
+        v1.denormalize(PRECISION.load(Ordering::Relaxed));
+        let result = BigFloat {
             body: &v1.body / &rhs.body,
-            exp: v1.exp,
+            exp: v1.exp - PRECISION.load(Ordering::Relaxed),
         };
-        result.normalize();
         result
     }
 }
@@ -284,6 +291,16 @@ impl From<String> for BigFloat {
         result
     }
 }
+impl From<&String> for BigFloat {
+    fn from(value: &String) -> BigFloat {
+        let mut result = BigFloat {
+            exp: 0,
+            body: BigInt::from(value),
+        };
+        result.normalize();
+        result
+    }
+}
 impl From<&str> for BigFloat {
     fn from(value: &str) -> BigFloat {
         let mut result = BigFloat {
@@ -294,6 +311,7 @@ impl From<&str> for BigFloat {
         result
     }
 }
+
 impl From<BigInt> for BigFloat {
     fn from(value: BigInt) -> BigFloat {
         let mut result = BigFloat {
@@ -361,6 +379,37 @@ fn pow_f(base: BigFloat, power: BigFloat) -> BigFloat {
 #[allow(unused)]
 impl fmt::Display for BigFloat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!("bigfloat printing")
+        let (mut part1, part2) = if self.body.len() < self.exp as usize {
+            (self.body.clone(), BigInt::from(0).to_string())
+        } else {
+            (
+                BigInt::from(&self.body.body[..(self.exp) as usize]),
+                BigInt::from(&self.body.body[((self.exp) as usize)..]).to_string(),
+            )
+        };
+        let chunk = BigInt::from("10^18");
+        let mut string: Vec<String> = vec![part2];
+        let mut temp: Vec<String> = Vec::new();
+
+        for _ in 0..self.exp - 2 {
+            part1 = part1 * &chunk;
+
+            if part1.len() > self.exp as usize {
+                let v = part1.body.pop().unwrap();
+                trim(&mut part1.body);
+                if part1 == BigInt::from(0) {
+                    temp.push(v.to_string());
+                    break;
+                } else {
+                    temp.push(format!("{:018}", v));
+                }
+            } else {
+                temp.push(format!("{:018}", 0))
+            }
+        }
+        let temp = temp.join("");
+        string.push(temp);
+        let result = string.join(".");
+        write!(f, "{}", result)
     }
 }
