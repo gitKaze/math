@@ -6,6 +6,7 @@ use crate::int::int::*;
 use std::time::Instant;
 mod float;
 mod int;
+#[allow(unused)]
 fn test(i1: &str, i2: &str) {
     let (v1, v2, v3, v4) = (
         BigInt::from(i1),
@@ -47,7 +48,7 @@ fn test(i1: &str, i2: &str) {
     let t = Instant::now();
     let temp = &v3 * &v4;
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("addition:");
     let t = Instant::now();
@@ -59,39 +60,47 @@ fn test(i1: &str, i2: &str) {
     let t = Instant::now();
     let temp = &v3 - &v4;
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("division:");
     let t = Instant::now();
     let temp = &v3 / &v4;
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("square root:");
     let t = Instant::now();
     let temp = sqrt(&v3);
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("cube root:");
     let t = Instant::now();
     let temp = cbrt(&v3);
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("square root:");
     let t = Instant::now();
     let temp = sqrt(&v4);
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
     println!("cube root:");
     let t = Instant::now();
     let temp = cbrt(&v4);
     let end = Instant::elapsed(&t);
-    println!("{:?}", temp);
+
     println!("result {} completed in {:?}", temp, end);
 }
 fn main() {
-    test("2^64", "2^128");
+    let (i1, i2) = ("2^64", "2^256");
+    #[allow(unused)]
+    let (v1, v2, v3, v4) = (
+        BigInt::from(i1),
+        BigInt::from(i2),
+        BigFloat::from(i1),
+        BigFloat::from(i2),
+    );
+    test(i1, i2);
 }

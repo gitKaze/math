@@ -154,7 +154,7 @@ impl Div<BigFloat> for BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: BigFloat) -> Self::Output {
         let mut v1 = self;
-        v1.denormalize(PRECISION.load(Ordering::Relaxed));
+        v1.denormalize(PRECISION.load(Ordering::Relaxed) + v1.exp);
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -167,7 +167,7 @@ impl Div<&BigFloat> for BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: &BigFloat) -> Self::Output {
         let mut v1 = self;
-        v1.denormalize(PRECISION.load(Ordering::Relaxed));
+        v1.denormalize(PRECISION.load(Ordering::Relaxed) + v1.exp);
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -180,7 +180,7 @@ impl Div<BigFloat> for &BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: BigFloat) -> Self::Output {
         let mut v1 = self.clone();
-        v1.denormalize(PRECISION.load(Ordering::Relaxed));
+        v1.denormalize(PRECISION.load(Ordering::Relaxed) + v1.exp);
         let mut result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - rhs.exp,
@@ -193,7 +193,7 @@ impl Div<&BigFloat> for &BigFloat {
     type Output = BigFloat;
     fn div(self, rhs: &BigFloat) -> Self::Output {
         let mut v1 = self.clone();
-        v1.denormalize(PRECISION.load(Ordering::Relaxed));
+        v1.denormalize(PRECISION.load(Ordering::Relaxed) + v1.exp);
         let result = BigFloat {
             body: &v1.body / &rhs.body,
             exp: v1.exp - PRECISION.load(Ordering::Relaxed),
@@ -380,11 +380,22 @@ fn pow_f(base: BigFloat, power: BigFloat) -> BigFloat {
 impl fmt::Display for BigFloat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (mut part1, part2) = if self.body.len() < self.exp as usize {
-            (self.body.clone(), BigInt::from(0).to_string())
+            (
+                self.body.clone(),
+                BigInt {
+                    body: vec![0],
+                    neg: self.body.neg,
+                }
+                .to_string(),
+            )
         } else {
             (
                 BigInt::from(&self.body.body[..(self.exp) as usize]),
-                BigInt::from(&self.body.body[((self.exp) as usize)..]).to_string(),
+                BigInt {
+                    body: BigInt::from(&self.body.body[((self.exp) as usize)..]).body,
+                    neg: self.body.neg,
+                }
+                .to_string(),
             )
         };
         let chunk = BigInt::from("10^18");

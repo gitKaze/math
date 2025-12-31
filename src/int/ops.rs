@@ -312,7 +312,7 @@ impl PartialOrd<BigInt> for BigInt {
         } else if v1.neg && v2.neg {
             (v1, v2) = (v2, v1);
         }
-        let (l1, l2) = (v1.body.len(), v2.body.len());
+        let (l1, l2) = (v1.body.len(), v2.len());
         if l1 == l2 {
             for (a, b) in zip(v1.body.iter(), v2.body.iter()) {
                 if a != b {

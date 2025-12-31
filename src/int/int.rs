@@ -1,4 +1,4 @@
-use core::cmp::{Ord, Ordering};
+use core::cmp::{Ord, Ordering, max};
 #[allow(unused)]
 use rayon::iter::*;
 #[allow(unused)]
@@ -163,6 +163,7 @@ impl BigInt {
     }
     #[inline(always)]
     pub(crate) fn sub_abs(&self, other: &Self) -> Vec<u64> {
+        cmp_abs(self, other);
         let (v1, v2) = if cmp_abs(self, other) == -1 {
             (other, self)
         } else if cmp_abs(self, other) == 0 {
@@ -293,7 +294,7 @@ impl BigInt {
     }
 }
 pub(crate) fn cmp_abs(v1: &BigInt, v2: &BigInt) -> i8 {
-    match v1.body.cmp(&v2.body) {
+    match v1.cmp(&v2) {
         Ordering::Greater => 1,
         Ordering::Equal => 0,
         Ordering::Less => -1,
@@ -396,8 +397,18 @@ fn div_abs(v1: &BigInt, v2: &BigInt) -> (Vec<u64>, Vec<u64>) {
     let mut dividend = v1 << ld;
     dividend.body.push(0);
     let divisor = v2 << ld;
-    let (n, m) = (divisor.body.len(), dividend.body.len());
-    let mut result: Vec<u64> = vec![0; m - n + 1];
+    let (mut n, mut m): (usize, usize);
+    let mut result: Vec<u64>;
+    if dividend.body.len() < divisor.body.len() {
+        (n, m) = (divisor.body.len(), dividend.body.len());
+        dividend <<= (64 * (divisor.len() - dividend.len() + 1)) as u64;
+        result = vec![0; n - m];
+        (n, m) = (divisor.body.len(), dividend.body.len());
+    } else {
+        (n, m) = (divisor.body.len(), dividend.body.len());
+        result = vec![0; max(m - n, 1)];
+    };
+
     for i in (0..(m - n)).rev() {
         let (h1, h2, d1) = (
             dividend.body[i + n],
