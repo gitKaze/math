@@ -31,6 +31,45 @@ pub struct BigInt {
     pub(crate) body: Vec<u64>,
 }
 impl BigInt {
+    #[inline(always)]
+    pub fn pow(&self, power: &u64) -> Self {
+        if power < &0 {
+            return BigInt::default();
+        }
+        if BigInt::from(0) == self {
+            return BigInt::default();
+        } else if BigInt::from(1) == self || power == &0 {
+            return BigInt::from(1);
+        } else if power == &1 {
+            return BigInt {
+                neg: (false),
+                body: (self.body.clone()),
+            };
+        }
+        let mut res = BigInt {
+            neg: (self.neg),
+            body: (vec![1]),
+        };
+        if power % 2 == 0 {
+            res.neg = false
+        }
+        let mut b: BigInt = BigInt::default();
+        b.body.clone_from(&self.body);
+        let mut n = power.clone();
+        while n != 0 {
+            if (n & 1) == 1 {
+                res = &res * &b;
+                if n == 1 {
+                    break;
+                }
+                b = &b * &b;
+            } else {
+                b = &b * &b;
+            }
+            n >>= 1;
+        }
+        return res;
+    }
     pub(crate) fn add_sing(&self, other: &Self) -> BigInt {
         match (self.neg, other.neg) {
             (true, true) => BigInt {
@@ -345,45 +384,6 @@ pub fn pow10(power: &u64) -> BigInt {
     return res;
 }
 #[inline(always)]
-pub fn pow(base: &BigInt, power: &u64) -> BigInt {
-    if power < &0 {
-        return BigInt::default();
-    }
-    if BigInt::from(0) == base {
-        return BigInt::default();
-    } else if BigInt::from(1) == base || power == &0 {
-        return BigInt::from(1);
-    } else if power == &1 {
-        return BigInt {
-            neg: (false),
-            body: (base.body.clone()),
-        };
-    }
-    let mut res = BigInt {
-        neg: (base.neg),
-        body: (vec![1]),
-    };
-    if power % 2 == 0 {
-        res.neg = false
-    }
-    let mut b: BigInt = BigInt::default();
-    b.body.clone_from(&base.body);
-    let mut n = power.clone();
-    while n != 0 {
-        if (n & 1) == 1 {
-            res = &res * &b;
-            if n == 1 {
-                break;
-            }
-            b = &b * &b;
-        } else {
-            b = &b * &b;
-        }
-        n >>= 1;
-    }
-    return res;
-}
-#[inline(always)]
 fn div_ww_w(hi: &u64, low: &u64, divs: &u64) -> (u128, u128) {
     let dividend = ((*hi as u128) << 64) | (*low as u128);
     return (
@@ -519,7 +519,7 @@ pub(crate) fn shr(v1: &BigInt, other: &u128) -> BigInt {
     let shift = other % 64;
     let drain = other / 64;
     if drain != 0 {
-        if result.body.len() == drain as usize {
+        if result.body.len() == drain as usize || result.body.len() < (drain - 1) as usize {
             result.body = vec![0];
             return result;
         }
@@ -574,6 +574,7 @@ pub(crate) fn shl(v1: &BigInt, other: &u128) -> BigInt {
     if zeros != 0 {
         let app: Vec<u64> = vec![0; zeros as usize];
         result.body.splice(0..0, app);
+        return result;
     }
     if shift == 0 {
         return v1.clone();

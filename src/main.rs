@@ -70,31 +70,35 @@ fn test(i1: &str, i2: &str) {
     println!("result {} completed in {:?}", temp, end);
     println!("square root:");
     let t = Instant::now();
-    let temp = sqrt(&v3);
+    let temp = root(&v3, 2);
     let end = Instant::elapsed(&t);
 
     println!("result {} completed in {:?}", temp, end);
     println!("cube root:");
     let t = Instant::now();
-    let temp = cbrt(&v3);
+    let temp = root(&v3, 3);
     let end = Instant::elapsed(&t);
 
     println!("result {} completed in {:?}", temp, end);
     println!("square root:");
     let t = Instant::now();
-    let temp = sqrt(&v4);
+    let temp = root(&v4, 2);
     let end = Instant::elapsed(&t);
 
     println!("result {} completed in {:?}", temp, end);
     println!("cube root:");
     let t = Instant::now();
-    let temp = cbrt(&v4);
+    let temp = root(&v4, 3);
     let end = Instant::elapsed(&t);
 
     println!("result {} completed in {:?}", temp, end);
 }
 fn main() {
-    let (i1, i2) = ("2^64", "2^256");
+    println!(
+        "{}",
+        (BigFloat::from(1) / BigFloat::from(3)) * BigFloat::from("2^64")
+    );
+    let (i1, i2) = ("2^128", "2^19683");
     #[allow(unused)]
     let (v1, v2, v3, v4) = (
         BigInt::from(i1),

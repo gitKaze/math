@@ -357,7 +357,7 @@ fn parse_float<T: AsRef<str>>(input: T) -> BigFloat {
                 return pow_f(to_float(a[0]), power);
             }
             let result = BigFloat {
-                body: pow(&to_float(a[0]).body, &(a[1].parse().unwrap())),
+                body: to_float(a[0]).body.pow(&(a[1].parse().unwrap())),
                 exp: PRECISION.load(Ordering::Relaxed),
             };
             result
@@ -422,5 +422,18 @@ impl fmt::Display for BigFloat {
         string.push(temp);
         let result = string.join(".");
         write!(f, "{}", result)
+    }
+}
+impl PartialEq for BigFloat {
+    fn eq(&self, other: &Self) -> bool {
+        todo!("1")
+    }
+    fn ne(&self, other: &Self) -> bool {
+        todo!("1")
+    }
+}
+impl PartialOrd for BigFloat {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        todo!("1")
     }
 }

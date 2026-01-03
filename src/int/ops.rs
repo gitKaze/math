@@ -33,7 +33,7 @@ impl BigInt {
         if p {
             let base_exp: Vec<&str> = input.splitn(2, "^").collect();
             let power: u64 = base_exp[1].parse().unwrap();
-            result.body = pow(&str_bigint(&base_exp[0]), &power).body;
+            result.body = str_bigint(&base_exp[0]).pow(&power).body;
             if (BigInt::from(power) % Self::from(2)) == Self::default() {
                 result.neg = false
             }
