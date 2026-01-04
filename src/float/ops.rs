@@ -1,7 +1,7 @@
 use crate::float::float::*;
 use crate::int::int::*;
-use std::fmt;
-use std::sync::atomic::Ordering;
+
+use std::{cmp::Ordering::*, fmt, iter::zip, sync::atomic::Ordering};
 #[allow(unused)]
 use std::{cmp::*, ops::*};
 impl Add<BigFloat> for BigFloat {
@@ -379,6 +379,9 @@ fn pow_f(base: BigFloat, power: BigFloat) -> BigFloat {
 #[allow(unused)]
 impl fmt::Display for BigFloat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.exp == 0 {
+            return write!(f, "{}", self.body);
+        }
         let (mut part1, part2) = if self.body.len() < self.exp as usize {
             (
                 self.body.clone(),
@@ -424,16 +427,104 @@ impl fmt::Display for BigFloat {
         write!(f, "{}", result)
     }
 }
-impl PartialEq for BigFloat {
-    fn eq(&self, other: &Self) -> bool {
-        todo!("1")
-    }
-    fn ne(&self, other: &Self) -> bool {
-        todo!("1")
-    }
-}
 impl PartialOrd for BigFloat {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        todo!("1")
+        let (mut v1, mut v2) = (self, other);
+        if !v1.body.neg && v2.body.neg {
+            return Some(Greater);
+        } else if v1.body.neg && !v2.body.neg {
+            return Some(Less);
+        } else if v1.body.neg && v2.body.neg {
+            (v1, v2) = (v2, v1);
+        }
+        let (l1, l2) = (
+            v1.body.len() - v1.exp as usize,
+            v2.body.len() - v2.exp as usize,
+        );
+        if l1 == l2 {
+            for (a, b) in zip(v1.body.body.iter(), v2.body.body.iter()) {
+                if a != b {
+                    if a > b {
+                        return Some(Greater);
+                    } else {
+                        return Some(Less);
+                    }
+                }
+            }
+            return Some(Equal);
+        } else if l1 < l2 {
+            return Some(Less);
+        } else {
+            return Some(Greater);
+        };
+    }
+    fn ge(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => true,
+            Some(Equal) => true,
+            Some(Less) => false,
+            _ => false,
+        }
+    }
+    fn gt(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => true,
+            Some(Equal) => false,
+            Some(Less) => false,
+            _ => false,
+        }
+    }
+    fn le(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => false,
+            Some(Equal) => true,
+            Some(Less) => true,
+            _ => false,
+        }
+    }
+    fn lt(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => false,
+            Some(Equal) => false,
+            Some(Less) => true,
+            _ => false,
+        }
+    }
+}
+impl PartialEq for BigFloat {
+    fn eq(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => false,
+            Some(Equal) => true,
+            Some(Less) => false,
+            _ => false,
+        }
+    }
+    fn ne(&self, other: &Self) -> bool {
+        match self.partial_cmp(other) {
+            Some(Greater) => true,
+            Some(Equal) => false,
+            Some(Less) => true,
+            _ => false,
+        }
+    }
+}
+impl Ord for BigFloat {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        return self.partial_cmp(other).unwrap();
+    }
+}
+impl Eq for BigFloat {}
+impl PartialEq<&BigFloat> for BigFloat {
+    fn eq(&self, other: &&Self) -> bool {
+        return self.eq(*other);
+    }
+    fn ne(&self, other: &&Self) -> bool {
+        return self.ne(*other);
+    }
+}
+impl PartialOrd<&BigFloat> for BigFloat {
+    fn partial_cmp(&self, other: &&Self) -> Option<std::cmp::Ordering> {
+        return self.partial_cmp(*other);
     }
 }
